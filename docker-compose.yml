@@ -1,0 +1,17 @@
+version: '3'
+services:
+  mongodb:
+      image: mongo:4.0.8
+      container_name: mongodb
+      hostname: mongodb
+      restart: unless-stopped
+      command: mongod --auth
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: mongodbuser
+        MONGO_INITDB_ROOT_PASSWORD: your_mongodb_root_password
+        MONGO_INITDB_DATABASE: road_trip
+        MONGODB_SERIES: user_search
+        MONGODB_DATA_DIR: /data/db
+        MONDODB_LOG_DIR: /dev/null
+      ports:
+          - "27017:27017"
