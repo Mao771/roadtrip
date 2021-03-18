@@ -1,8 +1,8 @@
 from typing import List
 from dataclasses import asdict
 
-from adapters import BaseDbAdapter
-from data_classes import Way, Node, SearchConfig
+from adapters.db_base_adapter import BaseDbAdapter
+from dto import Way, Node, SearchConfig
 
 
 class CacheProvider:
@@ -17,6 +17,9 @@ class CacheProvider:
         if ways is None:
             ways = []
 
+        ##
+        # TODO: saving nodes and ways takes much time due to iteration, need to be improved
+        ##
         search_results = {
             "user_id": user_id,
             "lon": search_config.longitude,
@@ -33,33 +36,35 @@ class CacheProvider:
             nodes = []
         if ways is None:
             ways = []
-
-        if len(nodes) == 0 and len(ways) == 0:
+        ##
+        # TODO: saving nodes and ways takes much time due to iteration, need to be improved
+        ##
+        if len(nodes) != 0 and len(ways) != 0:
             self.db_adapter.update({
                 "user_id": user_id
             }, {
+                "nodes": [asdict(node) for node in nodes],
+                "ways": [asdict(way) for way in ways],
                 "search_config": asdict(search_config)
             })
         elif len(nodes) != 0:
             self.db_adapter.update({
                 "user_id": user_id
             }, {
-                "nodes": nodes,
+                "nodes": [asdict(node) for node in nodes],
                 "search_config": asdict(search_config)
             })
         elif len(ways) != 0:
             self.db_adapter.update({
                 "user_id": user_id
             }, {
-                "ways": ways,
+                "ways": [asdict(way) for way in ways],
                 "search_config": asdict(search_config)
             })
         else:
             self.db_adapter.update({
                 "user_id": user_id
             }, {
-                "nodes": nodes,
-                "ways": ways,
                 "search_config": asdict(search_config)
             })
 

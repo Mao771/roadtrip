@@ -11,7 +11,7 @@ from requests import Response
 
 from providers.formulas_provider import calculate_square, calculate_distance
 from providers.osm_provider import OsmProvider
-from data_classes import Way, Node
+from dto import Way, Node
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -21,20 +21,26 @@ logger = logging.getLogger(__name__)
 
 def request_nodes_ways(squares_chunks: Union[tuple, list], asynchronously: bool = False):
     osm_provider = OsmProvider(base_url=environ.get('OSM_URL'))
+
     if asynchronously:
-        loop = asyncio.get_event_loop()
-        future = asyncio.ensure_future(osm_provider.get_osm_nodes_ways_async(squares_chunks))
-        responses = loop.run_until_complete(future)
-
         nodes, ways = [], []
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+        try:
+            # future = asyncio.ensure_future()
+            responses = loop.run_until_complete(osm_provider.get_osm_nodes_ways_async(squares_chunks))
 
-        for response in responses:
-            try:
-                nodes_request, ways_request = basic_algorithm(response)
-                nodes.extend(nodes_request)
-                ways.extend(ways_request)
-            except ValueError as e:
-                logger.error(str(e))
+            for response in responses:
+                try:
+                    nodes_request, ways_request = basic_algorithm(response)
+                    nodes.extend(nodes_request)
+                    ways.extend(ways_request)
+                except ValueError as e:
+                    logger.error(str(e))
+        except Exception as e:
+            logger.error(str(e))
 
         return nodes, ways
     else:
@@ -74,7 +80,7 @@ def basic_algorithm(osm_response: Response) -> Tuple[list, list]:
 
 
 def search_nodes_ways(coordinates: tuple, distance: int = 10,
-                      maximum_chunk_distance: int = 15,
+                      maximum_chunk_distance: int = 5,
                       maximum_geo_requests_count: int = 20) -> Tuple[list, list]:
     nodes, ways = [], []
     geo_request_count = 0
@@ -138,7 +144,7 @@ def generate_route(nodes: List[Node], ways: List[Way],
     route_url = 'https://www.google.com/maps/dir/'
     for node in result_nodes:
         route_url += str(node) + '/'
-    route_url += f'@{coordinates}'
+    route_url += f'@{str(initial_node)}'
 
     return route_url
 

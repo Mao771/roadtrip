@@ -1,7 +1,4 @@
 requests
-selenium
 aiohttp
-grequests
-pymemcache
 python-telegram-bot
 pymongo

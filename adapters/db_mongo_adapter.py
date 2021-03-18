@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 
-from .db_base_adapter import BaseDbAdapter
+from adapters.db_base_adapter import BaseDbAdapter
 
 
 class MongoDbAdapter(BaseDbAdapter):
@@ -32,6 +32,6 @@ class MongoDbAdapter(BaseDbAdapter):
 
     def update(self, old_data: dict, new_data: dict):
         try:
-            self.collection.update_one(old_data, new_data)
+            self.collection.update_one(old_data, {"$set": new_data})
         except Exception as e:
             raise ConnectionError('Could not update in MongoDB. Reason:', str(e))

@@ -3,7 +3,10 @@ from typing import Tuple
 
 
 def calculate_square(coordinates: tuple, distance: float, left: bool = False, right: bool = False,
-                     maximum_chunk_distance: int = 15) -> Tuple[float, float, float, float]:
+                     maximum_chunk_distance: int = 5) -> Tuple[float, float, float, float]:
+    """
+    Taken from https://stackoverflow.com/a/4000985
+    """
     EARTH_SPHERE_DEGREE = 360
     EARTH_CIRCUMFERENCE = 40057
 
@@ -48,6 +51,9 @@ def calculate_square(coordinates: tuple, distance: float, left: bool = False, ri
 
 
 def calculate_distance(point1: tuple, point2: tuple) -> float:
+    """
+    Taken from https://stackoverflow.com/a/21623206
+    """
     lat1, lon1 = point1
     lat2, lon2 = point2
     if lat1 < 0 or lon1 < 0 or lat2 < 0 or lon2 < 0:
