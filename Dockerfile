@@ -5,7 +5,7 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-ENV OSM_URL=https://api.openstreetmap.org/api/0.6/map
+ENV OSM_URL=https://overpass-api.de/api/interpreter
 ENV MONGODB_DATABASE=roadtrip
 ENV MONGODB_SERIES=user_search
 ENV MONGODB_USER=mongodbuser

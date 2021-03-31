@@ -4,10 +4,10 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler
 
-from providers.cache_provider import CacheProvider
+from providers import CacheProvider, OverpassProvider
 from adapters.db_mongo_adapter import MongoDbAdapter
-from dto import SearchConfig
-from base_algo import search_nodes_ways, generate_route
+from dto import SearchConfig, Coordinates
+from base_algo import BasicAlgorithm
 
 cache_provider = CacheProvider(MongoDbAdapter(host=os.environ.get('MONGODB_HOST', '127.0.0.1'),
                                               db_name=os.environ.get('MONGODB_DATABASE', 'road_trip'),
@@ -122,9 +122,9 @@ def button(update: Update, _: CallbackContext) -> None:
 
             keyboard = [
                 [
+                    InlineKeyboardButton("1", callback_data='1'),
                     InlineKeyboardButton("3", callback_data='3'),
                     InlineKeyboardButton("5", callback_data='5'),
-                    InlineKeyboardButton("7", callback_data='7'),
                 ]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -138,9 +138,13 @@ def button(update: Update, _: CallbackContext) -> None:
                                          latitude=search_config.get('latitude'),
                                          distance=search_config.get('distance'),
                                          nodes_count=int(callback_data))
-            initial_coordinates = (search_config.longitude, search_config.latitude)
-            nodes_, ways_ = search_nodes_ways(initial_coordinates, distance=search_config.distance)
-            route_url = generate_route(nodes_, ways_, initial_coordinates, nodes_count=search_config.nodes_count)
+            initial_coordinates = Coordinates(latitude=search_config.latitude,
+                                              longitude=search_config.longitude)
+            algorithm = BasicAlgorithm(OverpassProvider())
+            nodes_, ways_ = algorithm.search_nodes_ways(initial_coordinates, distance=search_config.distance)
+            route_url = algorithm.generate_route(nodes_, ways_, initial_coordinates,
+                                                 distance=search_config.distance,
+                                                 nodes_count=search_config.nodes_count)
 
             cache_provider.update_user_search(user_id, search_config)
             query.edit_message_text(text=f"Your route is generated! Please, follow the link: {route_url}")

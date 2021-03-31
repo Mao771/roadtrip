@@ -28,6 +28,7 @@ class CacheProvider:
             "ways": [asdict(way) for way in ways],
             "search_config": asdict(search_config)
         }
+        self.db_adapter.remove({"user_id": user_id})
         self.db_adapter.save(search_results)
 
     def update_user_search(self, user_id: str, search_config: SearchConfig,
