@@ -13,6 +13,8 @@ class MapsRequestType(Enum):
 
 @dataclass
 class MapsRequestData:
+    initial_coordinates: Coordinates = None
+    distance: float = -1
     square_coordinates: Union[List[List[Coordinates]], List[Coordinates]] = None
     points_radius: Dict[Coordinates, float] = None
     only_cities_and_towns: bool = False

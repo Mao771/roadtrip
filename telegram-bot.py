@@ -59,10 +59,10 @@ def location(update: Update, _: CallbackContext):
     else:
         message = update.message
     if message.location:
-        search_config = SearchConfig(longitude=message.location.longitude,
+        search_config = SearchConfig(id=user_id, longitude=message.location.longitude,
                                      latitude=message.location.latitude)
         try:
-            cache_provider.save_user_search(user_id, search_config)
+            cache_provider.save_user_search(search_config)
             distance_choice(update, _)
         except ConnectionError as e:
             error_handler(update, str(e))
@@ -70,10 +70,10 @@ def location(update: Update, _: CallbackContext):
         try:
             message_text = message.text.replace(' ', '')
             message_location = message_text.split(',')
-            search_config = SearchConfig(latitude=float(message_location[0]),
+            search_config = SearchConfig(id=user_id, latitude=float(message_location[0]),
                                          longitude=float(message_location[1]))
             try:
-                cache_provider.save_user_search(user_id, search_config)
+                cache_provider.save_user_search(search_config)
                 distance_choice(update, _)
             except ConnectionError as e:
                 error_handler(update, str(e))
@@ -109,13 +109,12 @@ def button(update: Update, _: CallbackContext) -> None:
 
     callback_data = query.data
     try:
-        search_results = cache_provider.get_search_results(user_id)
+        search_results = cache_provider.get_user_search(user_id)
         search_config = search_results.get('search_config')
 
         if 'km' in callback_data:
 
-            cache_provider.update_user_search(user_id,
-                                              SearchConfig(longitude=search_config.get('longitude'),
+            cache_provider.update_user_search(SearchConfig(id=user_id, longitude=search_config.get('longitude'),
                                                            latitude=search_config.get('latitude'),
                                                            distance=int(callback_data[:-2]))
                                               )
@@ -134,19 +133,19 @@ def button(update: Update, _: CallbackContext) -> None:
 
         else:
             query.edit_message_text(text=f"Your route is generating, please wait...")
-            search_config = SearchConfig(longitude=search_config.get('longitude'),
+            search_config = SearchConfig(id=user_id, longitude=search_config.get('longitude'),
                                          latitude=search_config.get('latitude'),
                                          distance=search_config.get('distance'),
                                          nodes_count=int(callback_data))
             initial_coordinates = Coordinates(latitude=search_config.latitude,
                                               longitude=search_config.longitude)
-            algorithm = BasicAlgorithm(OverpassProvider())
+            algorithm = BasicAlgorithm(OverpassProvider(), cache_provider=cache_provider)
             nodes_, ways_ = algorithm.search_nodes_ways(initial_coordinates, distance=search_config.distance)
             route_url = algorithm.generate_route(nodes_, ways_, initial_coordinates,
                                                  distance=search_config.distance,
                                                  nodes_count=search_config.nodes_count)
 
-            cache_provider.update_user_search(user_id, search_config)
+            cache_provider.update_user_search(search_config)
             query.edit_message_text(text=f"Your route is generated! Please, follow the link: {route_url}")
     except ConnectionError as e:
         error_handler(update, str(e))

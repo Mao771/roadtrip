@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass, field
+from pydantic import BaseModel
 
 
 @dataclass
@@ -14,12 +15,25 @@ class Coordinates:
         return (self.latitude, self.longitude) == (other.latitude, other.longitude)
 
 
+class SearchConfigModel(BaseModel):
+    id: Optional[str]
+    latitude: float
+    longitude: float
+    distance: float
+    nodes_count: int
+
+    def construct_search_config(self) -> "SearchConfig":
+        return SearchConfig(id=self.id, latitude=self.latitude, longitude=self.longitude, distance=self.distance,
+                            nodes_count=self.nodes_count)
+
+
 @dataclass
 class SearchConfig:
     latitude: float
     longitude: float
-    distance: int = field(default=-1)
-    nodes_count: int = field(default=-1)
+    id: str = field(default='')
+    distance: float = field(default=0)
+    nodes_count: int = field(default=0)
 
 
 @dataclass
