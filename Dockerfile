@@ -18,4 +18,4 @@ ENV MONGODB_PASSWORD=your_mongodb_root_password
 ENV TELEGRAM_API_TOKEN=_
 ENV MONGODB_HOST=mongodb
 
-CMD uvicorn api.main:app --host "0.0.0.0" --port 8080 && python telegram-bot.py
+CMD python telegram-bot.py; uvicorn api.main:app --host "0.0.0.0" --port 8080

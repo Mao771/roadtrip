@@ -6,7 +6,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 
 from providers import CacheProvider, OverpassProvider
 from adapters.db_mongo_adapter import MongoDbAdapter
-from dto import SearchConfig, Coordinates
+from dto import SearchConfig
 from base_algo import BasicAlgorithm
 
 cache_provider = CacheProvider(MongoDbAdapter(host=os.environ.get('MONGODB_HOST', '127.0.0.1'),
@@ -137,13 +137,9 @@ def button(update: Update, _: CallbackContext) -> None:
                                          latitude=search_config.get('latitude'),
                                          distance=search_config.get('distance'),
                                          nodes_count=int(callback_data))
-            initial_coordinates = Coordinates(latitude=search_config.latitude,
-                                              longitude=search_config.longitude)
             algorithm = BasicAlgorithm(OverpassProvider(), cache_provider=cache_provider)
-            nodes_, ways_ = algorithm.search_nodes_ways(initial_coordinates, distance=search_config.distance)
-            route_url = algorithm.generate_route(nodes_, ways_, initial_coordinates,
-                                                 distance=search_config.distance,
-                                                 nodes_count=search_config.nodes_count)
+            nodes_, ways_ = algorithm.search_nodes_ways(search_config)
+            route_url = algorithm.generate_route(nodes_, ways_, search_config)
 
             cache_provider.update_user_search(search_config)
             query.edit_message_text(text=f"Your route is generated! Please, follow the link: {route_url}")
