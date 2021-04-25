@@ -18,3 +18,5 @@ services:
     build: .
     links:
       - mongodb
+    ports:
+      - "80:80"
