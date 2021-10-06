@@ -15,3 +15,7 @@ class BaseDbAdapter(ABC):
     @abstractmethod
     def update(self, old_data: dict, new_data: dict):
         raise NotImplementedError("Database adapter must implement update method")
+
+    @abstractmethod
+    def remove(self, old_data: dict):
+        raise NotImplementedError("Database adapter must implement remove method")

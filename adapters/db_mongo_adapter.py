@@ -35,3 +35,9 @@ class MongoDbAdapter(BaseDbAdapter):
             self.collection.update_one(old_data, {"$set": new_data})
         except Exception as e:
             raise ConnectionError('Could not update in MongoDB. Reason:', str(e))
+
+    def remove(self, old_data: dict):
+        try:
+            self.collection.remove(old_data)
+        except Exception as e:
+            raise ConnectionError('Could not remove in MongoDB. Reason:', str(e))

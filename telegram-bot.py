@@ -4,10 +4,10 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler
 
-from providers.cache_provider import CacheProvider
+from providers import CacheProvider, OverpassProvider
 from adapters.db_mongo_adapter import MongoDbAdapter
 from dto import SearchConfig
-from base_algo import search_nodes_ways, generate_route
+from base_algo import BasicAlgorithm
 
 cache_provider = CacheProvider(MongoDbAdapter(host=os.environ.get('MONGODB_HOST', '127.0.0.1'),
                                               db_name=os.environ.get('MONGODB_DATABASE', 'road_trip'),
@@ -49,7 +49,8 @@ def start(update: Update, _: CallbackContext) -> None:
 
 
 def help_command(update: Update, _: CallbackContext) -> None:
-    update.message.reply_text('You can send location via message in format lon,lat or attach location.')
+    update.message.reply_text('You can send location via message in format latitude/longitude e.g.: 50.27/30.31 '
+                              'or attach location.')
 
 
 def location(update: Update, _: CallbackContext):
@@ -59,27 +60,29 @@ def location(update: Update, _: CallbackContext):
     else:
         message = update.message
     if message.location:
-        search_config = SearchConfig(longitude=message.location.longitude,
+        search_config = SearchConfig(id=user_id, longitude=message.location.longitude,
                                      latitude=message.location.latitude)
         try:
-            cache_provider.save_user_search(user_id, search_config)
+            cache_provider.save_user_search(search_config)
             distance_choice(update, _)
         except ConnectionError as e:
             error_handler(update, str(e))
     else:
         try:
             message_text = message.text.replace(' ', '')
-            message_location = message_text.split(',')
-            search_config = SearchConfig(latitude=float(message_location[0]),
-                                         longitude=float(message_location[1]))
+            message_location = message_text.split('/')
+
+            search_config = SearchConfig(id=user_id, latitude=float(message_location[0].replace(',', '.')),
+                                         longitude=float(message_location[1].replace(',', '.')))
             try:
-                cache_provider.save_user_search(user_id, search_config)
+                cache_provider.save_user_search(search_config)
                 distance_choice(update, _)
             except ConnectionError as e:
                 error_handler(update, str(e))
-        except:
+        except Exception as e:
+            logger.error(e)
             update.message.reply_text('Sorry, I can not parse this location. Please, '
-                                      'send it in the format: longitude, latitude')
+                                      'send it in the format: latitude/longitude')
 
 
 def distance_choice(update: Update, _: CallbackContext) -> None:
@@ -109,22 +112,21 @@ def button(update: Update, _: CallbackContext) -> None:
 
     callback_data = query.data
     try:
-        search_results = cache_provider.get_search_results(user_id)
+        search_results = cache_provider.get_user_search(user_id)
         search_config = search_results.get('search_config')
 
         if 'km' in callback_data:
 
-            cache_provider.update_user_search(user_id,
-                                              SearchConfig(longitude=search_config.get('longitude'),
+            cache_provider.update_user_search(SearchConfig(id=user_id, longitude=search_config.get('longitude'),
                                                            latitude=search_config.get('latitude'),
                                                            distance=int(callback_data[:-2]))
                                               )
 
             keyboard = [
                 [
+                    InlineKeyboardButton("1", callback_data='1'),
+                    InlineKeyboardButton("2", callback_data='2'),
                     InlineKeyboardButton("3", callback_data='3'),
-                    InlineKeyboardButton("5", callback_data='5'),
-                    InlineKeyboardButton("7", callback_data='7'),
                 ]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -134,15 +136,15 @@ def button(update: Update, _: CallbackContext) -> None:
 
         else:
             query.edit_message_text(text=f"Your route is generating, please wait...")
-            search_config = SearchConfig(longitude=search_config.get('longitude'),
+            search_config = SearchConfig(id=user_id, longitude=search_config.get('longitude'),
                                          latitude=search_config.get('latitude'),
                                          distance=search_config.get('distance'),
                                          nodes_count=int(callback_data))
-            initial_coordinates = (search_config.longitude, search_config.latitude)
-            nodes_, ways_ = search_nodes_ways(initial_coordinates, distance=search_config.distance)
-            route_url = generate_route(nodes_, ways_, initial_coordinates, nodes_count=search_config.nodes_count)
+            algorithm = BasicAlgorithm(OverpassProvider(), cache_provider=cache_provider)
+            nodes_, ways_ = algorithm.search_nodes_ways(search_config)
+            route_url = algorithm.generate_route(nodes_, ways_, search_config)
 
-            cache_provider.update_user_search(user_id, search_config)
+            cache_provider.update_user_search(search_config)
             query.edit_message_text(text=f"Your route is generated! Please, follow the link: {route_url}")
     except ConnectionError as e:
         error_handler(update, str(e))
