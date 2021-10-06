@@ -32,8 +32,7 @@ class BasicAlgorithm:
     def search_nodes_ways(self, search_config: SearchConfig,
                           maximum_chunk_distance: float = 20,
                           maximum_geo_requests_count: int = 15,
-                          maps_request_type: MapsRequestType = None,
-                          generate_route: bool = True) -> Tuple[list, list]:
+                          maps_request_type: MapsRequestType = None) -> Tuple[list, list]:
         nodes, ways = [], []
         geo_request_count = 0
         distance = search_config.distance
@@ -73,9 +72,6 @@ class BasicAlgorithm:
                                                                                maximum_geo_requests_count)
 
                 nodes, ways = self.request_nodes_ways(request_data, asynchronously=True)
-
-        if generate_route:
-            self.generate_route(nodes, ways, search_config)
 
         return nodes, ways
 
@@ -180,8 +176,10 @@ class BasicAlgorithm:
             if len(result_nodes) == nodes_count:
                 print("nodes found.")
                 break
-        else:
+
+        if len(result_nodes) != nodes_count or len(result_nodes) == 1:
             try:
+                result_nodes = [initial_node]
                 result_nodes.extend(sample(nodes, (nodes_count - 1) if nodes_count != 1 else 1))
             except ValueError:
                 pass

@@ -41,16 +41,26 @@ class CacheProvider:
     def save_api_responses(self, search_config: SearchConfig, api_responses: list):
         if api_responses and len(api_responses) > 0:
             # we can't use unique id because we want to save api responses for general search criteria
+            # we cache response for coordinate and distance without nodes_count
             search_config_dict = asdict(search_config)
-            search_config_dict.pop("id")
+            try:
+                search_config_dict.pop("id")
+                search_config_dict.pop("nodes_count")
+            except KeyError:
+                pass
             self.db_adapter.remove({"_id": {"search_config": search_config_dict}})
             self.db_adapter.save({"_id": {"search_config": search_config_dict},
                                   "responses": api_responses})
 
     def get_api_responses(self, search_config: SearchConfig):
         # we can't use unique id because we want to get api responses for general search criteria
+        # we cache response for coordinate and distance without nodes_count
         search_config_dict = asdict(search_config)
-        search_config_dict.pop("id")
+        try:
+            search_config_dict.pop("id")
+            search_config_dict.pop("nodes_count")
+        except KeyError:
+            pass
         return self.db_adapter.select({
             "_id": {"search_config": search_config_dict}
         })

@@ -49,7 +49,8 @@ def start(update: Update, _: CallbackContext) -> None:
 
 
 def help_command(update: Update, _: CallbackContext) -> None:
-    update.message.reply_text('You can send location via message in format lon,lat or attach location.')
+    update.message.reply_text('You can send location via message in format latitude/longitude e.g.: 50.27/30.31 '
+                              'or attach location.')
 
 
 def location(update: Update, _: CallbackContext):
@@ -69,17 +70,19 @@ def location(update: Update, _: CallbackContext):
     else:
         try:
             message_text = message.text.replace(' ', '')
-            message_location = message_text.split(',')
-            search_config = SearchConfig(id=user_id, latitude=float(message_location[0]),
-                                         longitude=float(message_location[1]))
+            message_location = message_text.split('/')
+
+            search_config = SearchConfig(id=user_id, latitude=float(message_location[0].replace(',', '.')),
+                                         longitude=float(message_location[1].replace(',', '.')))
             try:
                 cache_provider.save_user_search(search_config)
                 distance_choice(update, _)
             except ConnectionError as e:
                 error_handler(update, str(e))
-        except:
+        except Exception as e:
+            logger.error(e)
             update.message.reply_text('Sorry, I can not parse this location. Please, '
-                                      'send it in the format: longitude, latitude')
+                                      'send it in the format: latitude/longitude')
 
 
 def distance_choice(update: Update, _: CallbackContext) -> None:
@@ -122,8 +125,8 @@ def button(update: Update, _: CallbackContext) -> None:
             keyboard = [
                 [
                     InlineKeyboardButton("1", callback_data='1'),
+                    InlineKeyboardButton("2", callback_data='2'),
                     InlineKeyboardButton("3", callback_data='3'),
-                    InlineKeyboardButton("5", callback_data='5'),
                 ]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
